@@ -1,7 +1,12 @@
 # TheCarLauncher
 
-> Had Claude help to translate the whole UI of the app to Spanish (Spain)  🇪🇸
-> Added a new tile to the "Language" menu inside Settings to select Spanish.
+> Why the fork?  
+
+Translated the entire app UI into Spanish (Spain) using Claude. 🇪🇸  
+Added a new tile to the **Language** menu in Settings to select Spanish.  
+
+> in "Radio-Online" branch I added a new feature to test the app radio on devices that aren't car headunits, such as Android tablets.
+---
 
 A home-screen launcher for Android head units, built for a double-DIN unit on the
 **UIS7862S platform (model code QF001)** in a compact hatchback. Its interface is styled after a
