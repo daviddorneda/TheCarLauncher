@@ -1,6 +1,7 @@
 # TheCarLauncher
 
-> Had Claude help to translate the whole UI of the app to Spanish (Spain)  🇪🇸 
+> Had Claude help to translate the whole UI of the app to Spanish (Spain)  🇪🇸
+> Added a new tile to the "Language" menu inside Settings to select Spanish.
 
 A home-screen launcher for Android head units, built for a double-DIN unit on the
 **UIS7862S platform (model code QF001)** in a compact hatchback. Its interface is styled after a
