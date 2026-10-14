@@ -1,5 +1,6 @@
 package com.thecarlauncher.nav;
 
+import com.thecarlauncher.mib.Mib;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -76,7 +77,7 @@ public final class NavHelper {
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         if (Ui.start(c, i)) return;
         Intent generic = new Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + q));
-        if (!Ui.start(c, generic)) Ui.toast(c, "No navigation app installed");
+        if (!Ui.start(c, generic)) Ui.toast(c, Mib.t(c, "No navigation app installed", "No navigation app installed"));
     }
 
     /** Opens the navigation app itself, centred on the current position when possible. */
@@ -90,7 +91,7 @@ public final class NavHelper {
                 here.getLatitude(), here.getLongitude());
         Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(geo));
         if (pkg != null) i.setPackage(pkg);
-        if (!Ui.start(c, i)) Ui.toast(c, "No navigation app installed");
+        if (!Ui.start(c, i)) Ui.toast(c, Mib.t(c, "No navigation app installed", "No navigation app installed"));
     }
 
     private static boolean installed(PackageManager pm, String pkg) {

@@ -450,9 +450,9 @@ public class VehicleScreen extends Screen implements LocationTracker.Listener {
         List<CarData.Refuel> l = cd.refuels();
         for (int i = l.size() - 1; i >= 0; i--) {
             CarData.Refuel r = l.get(i);
-            String v = String.format(Locale.US, "%.1f l", r.litres) + (r.price > 0 ? String.format(Locale.US, "  ·  %.2f din/l", r.price) : "")
+            String v = String.format(Locale.US, "%.1f l", r.litres) + (r.price > 0 ? String.format(Locale.US, "  ·  %.2f " + Mib.currency(act) + "/l", r.price) : "")
                     + "  ·  " + km(r.odoKm);
-            row(col, R.drawable.ui_ic_clock, CarData.date(r.time) + (r.full ? "" : s("  (delimično)", "  (partial)")), v, null);
+            row(col, R.drawable.ui_ic_clock, CarData.date(act, r.time) + (r.full ? "" : s("  (delimično)", "  (partial)")), v, null);
         }
         if (!l.isEmpty()) {
             row(col, R.drawable.ui_ic_back, s("Obriši poslednje točenje", "Delete last fill-up"), null, new Runnable() {
@@ -506,7 +506,7 @@ public class VehicleScreen extends Screen implements LocationTracker.Listener {
                     }
                 });
         row(col, R.drawable.ui_ic_clock, s("Godišnji servis", "Annual service"),
-                cd.oilDueDate() > 0 ? CarData.date(cd.oilDueDate()) : "–", new Runnable() {
+                cd.oilDueDate() > 0 ? CarData.date(act, cd.oilDueDate()) : "–", new Runnable() {
                     public void run() {
                         Dialogs.date(act, cd.oilDueDate(), new Dialogs.DatePicked() {
                             public void onDate(long t) {
@@ -525,7 +525,7 @@ public class VehicleScreen extends Screen implements LocationTracker.Listener {
                     }
                 });
         row(col, R.drawable.ui_ic_flag, s("Registracija ističe", "Registration expires"),
-                cd.registrationDate() > 0 ? CarData.date(cd.registrationDate()) : "–", new Runnable() {
+                cd.registrationDate() > 0 ? CarData.date(act, cd.registrationDate()) : "–", new Runnable() {
                     public void run() {
                         Dialogs.date(act, cd.registrationDate(), new Dialogs.DatePicked() {
                             public void onDate(long t) {
@@ -631,9 +631,9 @@ public class VehicleScreen extends Screen implements LocationTracker.Listener {
             cells[1].setText(avg < 0 ? "–" : String.format(Locale.US, "%.1f l/100", avg));
             cells[2].setText(range < 0 ? "–" : String.format(Locale.US, "%.0f km", range));
             List<CarData.Refuel> l = cd.refuels();
-            cells[3].setText(l.isEmpty() ? "–" : CarData.date(l.get(l.size() - 1).time));
-            cells[4].setText(avg < 0 || price < 0 ? "–" : String.format(Locale.US, "%.0f din", avg * price));
-            cells[5].setText(price < 0 ? "–" : String.format(Locale.US, "%.1f din", price));
+            cells[3].setText(l.isEmpty() ? "–" : CarData.date(act, l.get(l.size() - 1).time));
+            cells[4].setText(avg < 0 || price < 0 ? "–" : String.format(Locale.US, "%.0f " + Mib.currency(act), avg * price));
+            cells[5].setText(price < 0 ? "–" : String.format(Locale.US, "%.1f " + Mib.currency(act), price));
         }
     }
 }

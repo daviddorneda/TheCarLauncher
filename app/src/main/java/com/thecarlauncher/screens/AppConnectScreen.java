@@ -328,7 +328,7 @@ public class AppConnectScreen extends Screen {
                         + "The phone's screen is shown by the unit's ZLink app.\n\nStatus: ") + st + "\n"
                 + s("Način: ", "Mode: ") + md;
         new android.app.AlertDialog.Builder(act).setTitle("App-Connect").setMessage(text)
-                .setPositiveButton("OK", null).show();
+                .setPositiveButton(Mib.t(act, "OK", "OK"), null).show();
     }
 
     @Override

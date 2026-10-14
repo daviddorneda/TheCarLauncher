@@ -1,5 +1,6 @@
 package com.thecarlauncher.media;
 
+import com.thecarlauncher.mib.Mib;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -139,7 +140,7 @@ public final class MediaHub {
             if (Ui.start(app, i)) return;
         }
         i = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        if (!Ui.start(app, i)) Ui.toast(app, "Notification access settings not found");
+        if (!Ui.start(app, i)) Ui.toast(app, Mib.t(app, "Notification access settings not found", "Notification access settings not found"));
     }
 
     public boolean hasNotificationAccess() {
@@ -666,7 +667,7 @@ public final class MediaHub {
         }
         if (btSelected && (t == null || t.length() == 0) && notifUsable()) t = notifTitle;
         if (btSelected && (t == null || t.length() == 0)) t = qf().title();
-        if (btSelected && (t == null || t.length() == 0)) t = "Bluetooth audio";
+        if (btSelected && (t == null || t.length() == 0)) t = Mib.t(app, "Bluetooth audio", "Bluetooth audio");
         return t;
     }
 
@@ -682,7 +683,7 @@ public final class MediaHub {
         }
         if (btSelected && (a == null || a.length() == 0) && notifUsable()) a = notifText;
         if (btSelected && (a == null || a.length() == 0)) a = qf().artist();
-        if (btSelected && (a == null || a.length() == 0)) a = "Music from your phone";
+        if (btSelected && (a == null || a.length() == 0)) a = Mib.t(app, "Music from your phone", "Music from your phone");
         return a;
     }
 
@@ -816,7 +817,7 @@ public final class MediaHub {
     }
 
     public String sourceLabel(String pkg) {
-        if (pkg == null || pkg.equals(app.getPackageName())) return "USB / Music";
+        if (pkg == null || pkg.equals(app.getPackageName())) return Mib.t(app, "USB / Music", "USB / Music");
         if (BLUETOOTH.equals(pkg)) return "Bluetooth";
         if (RADIO.equals(pkg)) return "Radio FM";
         try {

@@ -1,5 +1,6 @@
 package com.thecarlauncher.apps;
 
+import com.thecarlauncher.mib.Mib;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -109,7 +110,7 @@ public final class AppRepository {
         }
         addHidden(pm, out);
         // The unit's Bluetooth audio app often has no icon at all: always offer a tile for it.
-        out.add(new App(BT_AUDIO, "", "Bluetooth audio", app.getDrawable(com.thecarlauncher.R.drawable.ui_key_bt)));
+        out.add(new App(BT_AUDIO, "", Mib.t(app, "Bluetooth audio", "Bluetooth audio"), app.getDrawable(com.thecarlauncher.R.drawable.ui_key_bt)));
         final Collator col = Collator.getInstance();
         Collections.sort(out, new Comparator<App>() {
             @Override
@@ -259,7 +260,7 @@ public final class AppRepository {
                 .setComponent(a.component())
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
         boolean ok = Ui.start(c, i);
-        if (!ok) Ui.toast(c, "Can't open " + a.label);
+        if (!ok) Ui.toast(c, Mib.t(c, "Can't open ", "Can't open ") + a.label);
         return ok;
     }
 

@@ -242,7 +242,7 @@ public class SettingsScreen extends Screen {
             }
         });
         sub(s("Vreme i datum", "Time and date"), new Page() { public void build() { buildTime(); } });
-        LinearLayout lang = sub("Jezik/Language", new Page() { public void build() { buildLanguage(); } });
+        LinearLayout lang = sub("Jezik/Language/Idioma", new Page() { public void build() { buildLanguage(); } });
         addLeading(lang, flag());
         sub(s("Jedinice", "Units"), new Page() { public void build() { buildUnits(); } });
         sub(s("Navigacija", "Navigation"), new Page() { public void build() { buildNav(); } });
@@ -255,7 +255,7 @@ public class SettingsScreen extends Screen {
         });
         sub(s("Mediji", "Media"), new Page() { public void build() { buildMedia(); } });
         sub("Radio", new Page() { public void build() { buildRadio(); } });
-        sub("Bluetooth audio", new Page() { public void build() { buildBluetooth(); } });
+        sub(s("Bluetooth audio", "Bluetooth audio"), new Page() { public void build() { buildBluetooth(); } });
         sub("App-Connect", new Page() { public void build() { buildAppConnect(); } });
         sub(s("Telefon i radio", "Phone and radio"), new Page() { public void build() { buildPhoneRadio(); } });
         sub(s("Vozilo", "Vehicle"), new Page() { public void build() { buildVehicle(); } });
@@ -271,10 +271,9 @@ public class SettingsScreen extends Screen {
     /** 30 colours for the UI accent ("ambient lighting"); the whole UI follows the choice. */
     private void buildAmbient() {
         int cur = Prefs.integer(act, Prefs.AMBIENT, Mib.DEFAULT_AMBIENT);
-        boolean en = "en".equals(Prefs.str(act, Prefs.LANGUAGE, "sr"));
         for (Object[] a : Mib.AMBIENT) {
             final int color = (Integer) a[2];
-            LinearLayout row = choice((String) (en ? a[1] : a[0]), color == cur, new Runnable() {
+            LinearLayout row = choice(Mib.t(act, (String) a[0], (String) a[1]), color == cur, new Runnable() {
                 public void run() {
                     Prefs.put(act, Prefs.AMBIENT, color);
                     act.restartUi();
@@ -312,6 +311,9 @@ public class SettingsScreen extends Screen {
         });
         choice("English", "en".equals(cur), new Runnable() {
             public void run() { setLanguage("en"); }
+        });
+        choice("Español (España)", "es".equals(cur), new Runnable() {
+            public void run() { setLanguage("es"); }
         });
     }
 

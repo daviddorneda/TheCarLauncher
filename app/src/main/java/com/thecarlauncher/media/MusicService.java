@@ -1,5 +1,6 @@
 package com.thecarlauncher.media;
 
+import com.thecarlauncher.mib.Mib;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -461,7 +462,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         Notification.Builder b;
         if (Build.VERSION.SDK_INT >= 26) {
             if (nm.getNotificationChannel(CHANNEL) == null) {
-                NotificationChannel ch = new NotificationChannel(CHANNEL, "Playback", NotificationManager.IMPORTANCE_LOW);
+                NotificationChannel ch = new NotificationChannel(CHANNEL, Mib.t(this, "Playback", "Playback"), NotificationManager.IMPORTANCE_LOW);
                 ch.setShowBadge(false);
                 nm.createNotificationChannel(ch);
             }

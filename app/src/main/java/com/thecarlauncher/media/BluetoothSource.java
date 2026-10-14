@@ -1,5 +1,6 @@
 package com.thecarlauncher.media;
 
+import com.thecarlauncher.mib.Mib;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -262,7 +263,7 @@ public final class BluetoothSource {
         if (screen != null && AppRepository.launch(app, screen)) return true;
         String pkg = appPackage();
         if (pkg != null && AppRepository.launchPackage(app, pkg)) return true;
-        Ui.toast(app, "Choose your Bluetooth music app in Settings → Media");
+        Ui.toast(app, Mib.t(app, "Choose your Bluetooth music app in Settings → Media", "Choose your Bluetooth music app in Settings → Media"));
         return false;
     }
 

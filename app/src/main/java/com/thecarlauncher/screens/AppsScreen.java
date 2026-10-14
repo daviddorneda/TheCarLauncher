@@ -87,7 +87,7 @@ public class AppsScreen extends Screen implements AppRepository.Listener {
                 filter();
             }
         });
-        bar.add("MENU", R.drawable.ui_ic_home, new View.OnClickListener() {
+        bar.add(Mib.t(act, "MENU", "MENU", "MENÚ"), R.drawable.ui_ic_home, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 act.show(LauncherActivity.MENU, true);

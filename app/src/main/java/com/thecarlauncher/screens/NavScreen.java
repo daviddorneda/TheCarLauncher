@@ -72,7 +72,8 @@ public class NavScreen extends Screen implements LocationTracker.Listener, Guida
     private String s(String sr, String en) { return Mib.t(act, sr, en); }
 
     private String lang() {
-        return "en".equals(Prefs.str(act, Prefs.LANGUAGE, "sr")) ? "en" : "sr-Latn,sr,hr,bs,en";
+        String l = Prefs.str(act, Prefs.LANGUAGE, "sr");
+        return "en".equals(l) ? "en" : "es".equals(l) ? "es,en" : "sr-Latn,sr,hr,bs,en";
     }
 
     @Override

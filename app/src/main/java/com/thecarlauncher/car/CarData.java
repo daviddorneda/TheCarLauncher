@@ -54,6 +54,7 @@ public final class CarData {
     public static CarData get(Context c) { return new CarData(c); }
 
     private String s(String sr, String en) { return Mib.t(c, sr, en); }
+    private String s(String sr, String en, String es) { return Mib.t(c, sr, en, es); }
 
     private double d(String key, double def) {
         try {
@@ -220,6 +221,15 @@ public final class CarData {
                 cal.get(Calendar.MONTH) + 1, cal.get(Calendar.YEAR));
     }
 
+    /** Date for the current language: 12.10.2026. (Serbian / English) or 12/10/2026 (Spanish). */
+    public static String date(Context c, long t) {
+        if (!Mib.isSpanish(c)) return date(t);
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(t);
+        return String.format(Locale.US, "%02d/%02d/%04d", cal.get(Calendar.DAY_OF_MONTH),
+                cal.get(Calendar.MONTH) + 1, cal.get(Calendar.YEAR));
+    }
+
     /** Status entries, most urgent first; empty means "Ne postoje unosi." */
     public List<Notice> notices() {
         List<Notice> out = new ArrayList<>();
@@ -231,13 +241,13 @@ public final class CarData {
         if (oilDueDate() > 0) {
             int days = daysUntil(oilDueDate());
             if (days <= 0) out.add(new Notice(s("Godišnji servis je dospeo!", "Annual service due now!"), true));
-            else if (days <= 30) out.add(new Notice(s("Servis za ", "Service in ") + days + s(" dana", " days"), false));
+            else if (days <= 30) out.add(new Notice(s("Servis za ", "Service in ") + days + s(" dana", " days", days == 1 ? " día" : " días"), false));
         }
         if (registrationDate() > 0) {
             int days = daysUntil(registrationDate());
             if (days <= 0) out.add(new Notice(s("Registracija je istekla!", "Registration has expired!"), true));
             else if (days <= 30) out.add(new Notice(s("Registracija ističe za ", "Registration expires in ") + days
-                    + s(" dana", " days"), days <= 7));
+                    + s(" dana", " days", days == 1 ? " día" : " días"), days <= 7));
         }
         if (tyreReminder()) {
             // Serbia: winter tyres are compulsory in winter conditions from 1 November to 1 April.

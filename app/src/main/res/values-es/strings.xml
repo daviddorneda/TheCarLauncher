@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Car Launcher</string>
+    <string name="media_listener_label">Controles multimedia de Car Launcher</string>
+    <string name="navigation">Navegación</string>
+    <string name="media">Multimedia</string>
+    <string name="favourites">Favoritos</string>
+    <string name="drive">Conducción</string>
+    <string name="nothing_playing">No se está reproduciendo nada</string>
+    <string name="tap_to_play">Toca para elegir música</string>
+    <string name="where_to">¿A dónde vamos?</string>
+    <string name="go">Ir</string>
+    <string name="search_apps">Buscar apps</string>
+    <string name="library">Biblioteca</string>
+    <string name="sound">Sonido</string>
+    <string name="open_app">Abrir app</string>
+    <string name="waiting_gps">Esperando GPS…</string>
+    <string name="map_attribution">© colaboradores de OpenStreetMap © CARTO</string>
+    <string name="home">Casa</string>
+    <string name="work">Trabajo</string>
+</resources>

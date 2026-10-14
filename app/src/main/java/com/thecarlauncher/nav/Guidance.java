@@ -57,6 +57,7 @@ public final class Guidance implements LocationTracker.Listener {
     }
 
     private String s(String sr, String en) { return Mib.t(app, sr, en); }
+    private String s(String sr, String en, String es) { return Mib.t(app, sr, en, es); }
 
     // ---- State -------------------------------------------------------------------------------
 
@@ -212,11 +213,12 @@ public final class Guidance implements LocationTracker.Listener {
         String m = st.modifier;
         switch (st.type) {
             case "arrive": return s("Odredište", "Destination");
-            case "depart": return s("Krenite", "Start");
+            case "depart": return s("Krenite", "Start", "Comienza la ruta");
             case "roundabout":
             case "rotary":
             case "roundabout turn":
-                return st.exit > 0 ? s("Kružni tok, " + st.exit + ". izlaz", "Roundabout, exit " + st.exit)
+                return st.exit > 0 ? s("Kružni tok, " + st.exit + ". izlaz", "Roundabout, exit " + st.exit,
+                        "Rotonda, salida " + st.exit)
                         : s("Kružni tok", "Roundabout");
             case "merge": return s("Uključite se", "Merge");
             case "on ramp": return s("Uđite na put", "Take the ramp");
@@ -256,8 +258,9 @@ public final class Guidance implements LocationTracker.Listener {
             @Override
             public void onInit(int status) {
                 if (status != TextToSpeech.SUCCESS) return;
-                boolean en = "en".equals(Prefs.str(app, Prefs.LANGUAGE, "sr"));
-                Locale[] wanted = en ? new Locale[]{Locale.ENGLISH}
+                String lang = Prefs.str(app, Prefs.LANGUAGE, "sr");
+                Locale[] wanted = "en".equals(lang) ? new Locale[]{Locale.ENGLISH}
+                        : "es".equals(lang) ? new Locale[]{new Locale("es", "ES"), new Locale("es")}
                         : new Locale[]{new Locale("sr", "RS"), new Locale("sr"), new Locale("hr", "HR"), new Locale("bs")};
                 for (Locale loc : wanted) {
                     if (tts.isLanguageAvailable(loc) >= TextToSpeech.LANG_AVAILABLE) {
@@ -289,10 +292,10 @@ public final class Guidance implements LocationTracker.Listener {
         }
         double early = Math.max(400, speed * 25);
         double now = Math.max(60, speed * 6);
-        String street = st.name.length() > 0 ? s(", " + st.name, ", onto " + st.name) : "";
+        String street = st.name.length() > 0 ? s(", " + st.name, ", onto " + st.name, ", por " + st.name) : "";
         if (spokenStage < 1 && d < early && d > now * 2) {
             spokenStage = 1;
-            say(s("Za " + spoken(d) + ", ", "In " + spoken(d) + ", ") + instruction(st).toLowerCase(Locale.ROOT) + street);
+            say(s("Za " + spoken(d) + ", ", "In " + spoken(d) + ", ", "En " + spoken(d) + ", ") + instruction(st).toLowerCase(Locale.ROOT) + street);
         } else if (spokenStage < 2 && d <= now) {
             spokenStage = 2;
             say(s("Sada ", "Now ") + instruction(st).toLowerCase(Locale.ROOT));
@@ -300,7 +303,10 @@ public final class Guidance implements LocationTracker.Listener {
     }
 
     private String spoken(double m) {
-        if (m >= 1000) return String.format(Locale.US, "%.1f", m / 1000).replace(".0", "").replace('.', ',') + s(" kilometara", " kilometres");
+        if (m >= 1000) {
+            String km = String.format(Locale.US, "%.1f", m / 1000).replace(".0", "").replace('.', ',');
+            return km + s(" kilometara", " kilometres", "1".equals(km) ? " kilómetro" : " kilómetros");
+        }
         return (Math.round(m / 50.0) * 50) + s(" metara", " metres");
     }
 

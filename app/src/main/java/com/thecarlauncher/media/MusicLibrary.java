@@ -1,5 +1,6 @@
 package com.thecarlauncher.media;
 
+import com.thecarlauncher.mib.Mib;
 import android.Manifest;
 import android.content.ContentUris;
 import android.content.Context;
@@ -90,8 +91,9 @@ public final class MusicLibrary {
                         folder = slash > 0 ? data.substring(0, slash) : data;
                     }
                     if (data != null) indexed.add(data);
-                    out.add(new Track(cur.getLong(0), clean(cur.getString(1), "Unknown title"),
-                            clean(cur.getString(2), "Unknown artist"), clean(cur.getString(3), "Unknown album"),
+                    out.add(new Track(cur.getLong(0), clean(cur.getString(1), Mib.t(c, "Unknown title", "Unknown title")),
+                            clean(cur.getString(2), Mib.t(c, "Unknown artist", "Unknown artist")),
+                            clean(cur.getString(3), Mib.t(c, "Unknown album", "Unknown album")),
                             cur.getLong(4), cur.getLong(5), cur.getLong(6), folder));
                 }
             }
@@ -128,12 +130,13 @@ public final class MusicLibrary {
         if (com.thecarlauncher.util.Storage.needsAllFiles() && !com.thecarlauncher.util.Storage.hasAllFiles()) return;
         paths.clear();
         int[] count = {0};
+        String unknownArtist = Mib.t(c, "Unknown artist", "Unknown artist");
         for (java.io.File root : com.thecarlauncher.util.Storage.removableRoots(c)) {
-            walk(root, 0, out, count);
+            walk(root, 0, out, count, unknownArtist);
         }
     }
 
-    private static void walk(java.io.File dir, int depth, List<Track> out, int[] count) {
+    private static void walk(java.io.File dir, int depth, List<Track> out, int[] count, String unknownArtist) {
         if (depth > MAX_DEPTH || count[0] >= MAX_FILES) return;
         java.io.File[] files = dir.listFiles();
         if (files == null) return;
@@ -141,11 +144,11 @@ public final class MusicLibrary {
             String name = f.getName();
             if (name.startsWith(".") || name.equals("LOST.DIR") || name.equals("Android")) continue;
             if (f.isDirectory()) {
-                walk(f, depth + 1, out, count);
+                walk(f, depth + 1, out, count, unknownArtist);
             } else if (AUDIO.matcher(name).matches() && !indexed.contains(f.getPath())) {
                 String folder = dir.getPath();
                 String base = name.substring(0, name.lastIndexOf('.'));
-                String artist = "Unknown artist", title = base;
+                String artist = unknownArtist, title = base;
                 int dash = base.indexOf(" - ");
                 if (dash > 0) {
                     artist = base.substring(0, dash).trim();
@@ -234,7 +237,7 @@ public final class MusicLibrary {
             g.count++;
         }
         List<Group> out = sorted(map);
-        for (Group g : out) g.subtitle = g.count + (g.count == 1 ? " song" : " songs");
+        for (Group g : out) g.subtitle = g.count + (g.count == 1 ? Mib.t(c, " song", " song") : Mib.t(c, " songs", " songs"));
         return out;
     }
 

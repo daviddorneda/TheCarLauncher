@@ -28,7 +28,7 @@ public class MenuScreen extends Screen implements AppRepository.Listener {
     }
 
     @Override
-    public String title() { return "MENU"; }
+    public String title() { return Mib.t(act, "MENU", "MENU", "MENÚ"); }
 
     @Override
     protected View create(ViewGroup parent) {

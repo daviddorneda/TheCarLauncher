@@ -1,5 +1,6 @@
 package com.thecarlauncher.screens;
 
+import com.thecarlauncher.mib.Mib;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -90,7 +91,7 @@ public final class Dialogs {
                         cb.onPicked(rows.get(which));
                     }
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(Mib.t(act, "Cancel", "Cancel"), null)
                 .show();
     }
 
@@ -111,13 +112,13 @@ public final class Dialogs {
         new AlertDialog.Builder(c)
                 .setTitle(title)
                 .setView(wrap)
-                .setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                .setPositiveButton(Mib.t(c, "Save", "Save"), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface d, int w) {
                         cb.onText(field.getText().toString().trim());
                     }
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(Mib.t(c, "Cancel", "Cancel"), null)
                 .show();
     }
 
@@ -155,14 +156,14 @@ public final class Dialogs {
         new AlertDialog.Builder(c)
                 .setTitle(title)
                 .setView(wrap)
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                .setPositiveButton(Mib.t(c, "OK", "OK"), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface d, int w) {
                         double v = parse(field);
                         if (v >= 0) cb.onNumber(v);
                     }
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(Mib.t(c, "Cancel", "Cancel"), null)
                 .show();
     }
 
@@ -199,14 +200,14 @@ public final class Dialogs {
         new AlertDialog.Builder(c)
                 .setTitle(title)
                 .setView(wrap)
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                .setPositiveButton(Mib.t(c, "OK", "OK"), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface d, int w) {
                         double l = parse(litres);
                         if (l > 0) cb.onRefuel(l, Math.max(0, parse(price)), full.isChecked());
                     }
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(Mib.t(c, "Cancel", "Cancel"), null)
                 .show();
     }
 
@@ -220,7 +221,7 @@ public final class Dialogs {
                         cb.onChosen(which);
                     }
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(Mib.t(c, "Cancel", "Cancel"), null)
                 .show();
     }
 

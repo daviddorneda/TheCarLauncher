@@ -51,6 +51,7 @@ public class RadioScreen extends Screen implements RadioController.Listener, com
     public String title() { return "Radio"; }
 
     private String s(String sr, String en) { return Mib.t(act, sr, en); }
+    private String s(String sr, String en, String es) { return Mib.t(act, sr, en, es); }
 
     @Override
     protected View create(ViewGroup parent) {
@@ -290,7 +291,9 @@ public class RadioScreen extends Screen implements RadioController.Listener, com
             message.setText(s("FM tjuner nije dostupan na ovom uređaju.\n(" + why + ")\n\n"
                             + (app != null ? "Dodirnite za radio aplikaciju." : "Radio aplikacija nije pronađena."),
                     "FM tuner is not available on this unit.\n(" + why + ")\n\n"
-                            + (app != null ? "Tap to open the radio app." : "No radio app found.")));
+                            + (app != null ? "Tap to open the radio app." : "No radio app found."),
+                    "El sintonizador FM no está disponible en este equipo.\n(" + why + ")\n\n"
+                            + (app != null ? "Toca para abrir la app de radio." : "No se ha encontrado ninguna app de radio.")));
         }
         radio.addListener(this);
         com.thecarlauncher.radio.RadioLogos.get(act).addListener(this);
@@ -399,7 +402,8 @@ public class RadioScreen extends Screen implements RadioController.Listener, com
 
         void save() {
             radio.savePreset(index);
-            Ui.toast(act, s("Sačuvano na " + (index % PER_PAGE + 1), "Stored on " + (index % PER_PAGE + 1)));
+            Ui.toast(act, s("Sačuvano na " + (index % PER_PAGE + 1), "Stored on " + (index % PER_PAGE + 1),
+                    "Guardada en " + (index % PER_PAGE + 1)));
         }
 
         void bind(RadioController.Station st, boolean current) {

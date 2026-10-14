@@ -80,9 +80,37 @@ public final class Mib {
 
     // ---- Language ---------------------------------------------------------------------------
 
-    /** Serbian (Latin) by default, like the factory unit; English as an option. */
+    /**
+     * Serbian (Latin) by default, like the factory unit; English and Spanish as options.
+     * Spanish texts live in {@link Es}, keyed by the English text.
+     */
     public static String t(Context c, String sr, String en) {
-        return "en".equals(Prefs.str(c, Prefs.LANGUAGE, "sr")) ? en : sr;
+        String lang = Prefs.str(c, Prefs.LANGUAGE, "sr");
+        if ("en".equals(lang)) return en;
+        if ("es".equals(lang)) return Es.tr(en);
+        return sr;
+    }
+
+    /** Like {@link #t(Context, String, String)}, with the Spanish text given right here (for texts built at run time). */
+    public static String t(Context c, String sr, String en, String es) {
+        String lang = Prefs.str(c, Prefs.LANGUAGE, "sr");
+        if ("en".equals(lang)) return en;
+        if ("es".equals(lang)) return es;
+        return sr;
+    }
+
+    public static boolean isSpanish(Context c) {
+        return "es".equals(Prefs.str(c, Prefs.LANGUAGE, "sr"));
+    }
+
+    /** Currency shown for fuel prices: dinar for the Serbian / English UI, euro for Spanish. */
+    public static String currency(Context c) {
+        return isSpanish(c) ? "€" : "din";
+    }
+
+    /** Name of the ambient colour {@code i} in the current language. */
+    public static String ambientName(Context c, int i) {
+        return t(c, (String) AMBIENT[i][0], (String) AMBIENT[i][1]);
     }
 
     // ---- Sizing -----------------------------------------------------------------------------

@@ -110,7 +110,8 @@ public final class StreetName implements LocationTracker.Listener {
     private String nominatim(double lat, double lon) {
         HttpURLConnection con = null;
         try {
-            String lang = "en".equals(Prefs.str(app, Prefs.LANGUAGE, "sr")) ? "en" : "sr-Latn,sr,hr,bs,en";
+            String l = Prefs.str(app, Prefs.LANGUAGE, "sr");
+            String lang = "en".equals(l) ? "en" : "es".equals(l) ? "es,en" : "sr-Latn,sr,hr,bs,en";
             URL u = new URL(String.format(Locale.US,
                     "https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&addressdetails=1&lat=%.6f&lon=%.6f",
                     lat, lon));
@@ -140,6 +141,7 @@ public final class StreetName implements LocationTracker.Listener {
     }
 
     private Locale locale() {
-        return "en".equals(Prefs.str(app, Prefs.LANGUAGE, "sr")) ? Locale.ENGLISH : new Locale("sr", "RS");
+        String l = Prefs.str(app, Prefs.LANGUAGE, "sr");
+        return "en".equals(l) ? Locale.ENGLISH : "es".equals(l) ? new Locale("es", "ES") : new Locale("sr", "RS");
     }
 }
