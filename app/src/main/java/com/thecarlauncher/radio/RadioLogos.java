@@ -77,6 +77,11 @@ public final class RadioLogos {
 
     /** The logo if it is on the unit; otherwise starts a lookup (when allowed) and returns null. */
     public Bitmap logo(String name) {
+        return logo(name, null);
+    }
+
+    /** The logo if it is on the unit; otherwise starts a lookup or direct URL download and returns null. */
+    public Bitmap logo(String name, final String logoUrl) {
         final String k = key(name);
         if (k.length() < 2) return null;
         Bitmap b = memory.get(k);
@@ -94,7 +99,8 @@ public final class RadioLogos {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    final boolean ok = fetch(n);
+                    final boolean ok = (logoUrl != null && !logoUrl.trim().isEmpty())
+                            ? downloadAndSave(k, logoUrl.trim()) : fetch(n);
                     main.post(new Runnable() {
                         @Override
                         public void run() {
@@ -108,6 +114,22 @@ public final class RadioLogos {
         }
         return null;
     }
+
+    private boolean downloadAndSave(String k, String url) {
+        try {
+            byte[] data = bytes(url);
+            Bitmap b = BitmapFactory.decodeByteArray(data, 0, data.length);
+            if (b == null) return false;
+            FileOutputStream fo = new FileOutputStream(new File(dir(), k + ".png"));
+            b.compress(Bitmap.CompressFormat.PNG, 100, fo);
+            fo.close();
+            memory.put(k, b);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 
     /** Downloads logos for every named station found by the scan and every preset. */
     public void downloadAll(RadioController radio, final Runnable done) {

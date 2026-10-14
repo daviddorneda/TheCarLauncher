@@ -95,9 +95,10 @@ public final class MediaHub {
     // ---- Built-in radio -----------------------------------------------------------------
 
     private RadioController radio() { return RadioController.get(app); }
+    private com.thecarlauncher.radio.InternetRadioController internetRadio() { return com.thecarlauncher.radio.InternetRadioController.get(app); }
 
-    /** True while the FM tuner is the audio source. */
-    public boolean isRadio() { return radio().isActive(); }
+    /** True while either FM tuner or Internet radio is the audio source. */
+    public boolean isRadio() { return radio().isActive() || internetRadio().isActive(); }
 
     /** Called by the radio when it changes state. */
     public void radioChanged() { notifyChanged(); }
@@ -106,9 +107,12 @@ public final class MediaHub {
     public void onRadioStarting() {
         MusicService own = MusicService.get();
         if (own != null && own.isPlaying()) own.pause();
+        if (internetRadio().isActive()) internetRadio().stop();
+        if (radio().isActive()) radio().stop();
         if (btSelected) pauseBluetooth();
         else if (active != null && !isOwn() && isPlaying(active)) active.getTransportControls().pause();
     }
+
 
     public void addListener(Listener l) {
         listeners.addIfAbsent(l);
@@ -353,10 +357,20 @@ public final class MediaHub {
     /** Switches source like the factory unit: the old source pauses, the new one plays. */
     public void select(String key) {
         if (RADIO.equals(key)) {
-            radio().start();
+            if (internetRadio().isActive() || radio().isActive()) return;
+            if (radio().available() && "fm".equals(Prefs.str(app, "radio_mode", "fm"))) {
+                radio().start();
+            } else {
+                com.thecarlauncher.radio.RadioStation st = internetRadio().currentStation();
+                if (st != null) internetRadio().play(st);
+                else internetRadio().resume();
+            }
             return;
         }
-        if (isRadio()) radio().stop();
+        if (isRadio()) {
+            radio().stop();
+            internetRadio().stop();
+        }
         // Leaving Bluetooth: give the MCU audio switch back to Android media.
         if (btSelected && !BLUETOOTH.equals(key) && btRouted) {
             radio().routeChannel(4);
@@ -376,6 +390,7 @@ public final class MediaHub {
         setActive(mc);
         notifyChanged();
     }
+
 
     private void selectBluetooth() {
         MusicService own = MusicService.get();
@@ -434,7 +449,6 @@ public final class MediaHub {
 
     /** The phone just connected over Bluetooth: BT audio becomes the source, like its key. */
     public void onPhoneConnected() {
-        BtDevices.get(app).known(); // remembers the phone
         if (!Prefs.bool(app, Prefs.BT_AUTO_SELECT, true)) return;
         btAutoAt = System.currentTimeMillis();
         select(BLUETOOTH);
@@ -657,7 +671,13 @@ public final class MediaHub {
     }
 
     public String title() {
-        if (isRadio()) return radio().label();
+        if (internetRadio().isActive()) {
+            com.thecarlauncher.radio.RadioStation st = internetRadio().currentStation();
+            String tt = internetRadio().trackTitle();
+            if (tt != null && !tt.isEmpty()) return tt;
+            return st != null ? st.getDisplayName() : "Internet Radio";
+        }
+        if (radio().isActive()) return radio().label();
         if (gocSong()) return goc().title();
         MediaMetadata m = meta();
         String t = null;
@@ -672,8 +692,14 @@ public final class MediaHub {
     }
 
     public String artist() {
+        if (internetRadio().isActive()) {
+            com.thecarlauncher.radio.RadioStation st = internetRadio().currentStation();
+            String art = internetRadio().artist();
+            if (art != null && !art.isEmpty()) return art;
+            return st != null ? st.getDisplayName() : "Internet Radio";
+        }
         if (gocSong() && goc().artist() != null && goc().artist().length() > 0) return goc().artist();
-        if (isRadio()) return radio().rt().length() > 0 ? radio().rt() : "FM " + RadioController.format(radio().freq()) + " MHz";
+        if (radio().isActive()) return radio().rt().length() > 0 ? radio().rt() : "FM " + RadioController.format(radio().freq()) + " MHz";
         MediaMetadata m = meta();
         String a = null;
         if (m != null) {
@@ -706,7 +732,15 @@ public final class MediaHub {
     }
 
     public Bitmap art() {
-        if (isRadio()) return null;
+        if (internetRadio().isActive()) {
+            com.thecarlauncher.radio.RadioStation st = internetRadio().currentStation();
+            if (st != null && !st.name.isEmpty()) {
+                Bitmap b = com.thecarlauncher.radio.RadioLogos.get(app).logo(st.name, st.logoUrl);
+                if (b != null) return b;
+            }
+            return null;
+        }
+        if (radio().isActive()) return null;
         // Song from the Bluetooth daemon: only a cover that belongs to that same song.
         if (gocSong()) {
             MediaMetadata gm = meta();
@@ -719,6 +753,7 @@ public final class MediaHub {
         MediaMetadata m = meta();
         Bitmap b = null;
         if (m != null) {
+
             b = m.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);
             if (b == null) b = m.getBitmap(MediaMetadata.METADATA_KEY_ART);
             if (b == null) b = m.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON);

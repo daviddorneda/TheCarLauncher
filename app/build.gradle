@@ -10,8 +10,8 @@ android {
         applicationId 'com.thecarlauncher'
         minSdk 21
         targetSdk 34
-        versionCode 62
-        versionName '4.3.1'
+        versionCode 60
+        versionName '4.2.5'
     }
 
     signingConfigs {
@@ -39,7 +39,12 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
     lint {
+
         abortOnError false
         checkReleaseBuilds false
     }
@@ -48,4 +53,15 @@ android {
 dependencies {
     // Offline maps (mapsforge, LGPL-3.0) and its SVG helper (Apache-2.0); see NOTICE.
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    // Media3 ExoPlayer for Internet Radio streaming
+    implementation 'androidx.media3:media3-exoplayer:1.3.1'
+    implementation 'androidx.media3:media3-exoplayer-hls:1.3.1'
+    implementation 'androidx.media3:media3-common:1.3.1'
+    implementation 'androidx.media3:media3-extractor:1.3.1'
+
+    testImplementation 'junit:junit:4.13.2'
 }
+
+
+

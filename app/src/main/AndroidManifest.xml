@@ -74,7 +74,11 @@
         android:largeHeap="true"
         android:requestLegacyExternalStorage="true"
         android:supportsRtl="false"
+        android:usesCleartextTraffic="true"
+        tools:targetApi="23"
         android:theme="@style/LauncherTheme">
+
+
 
         <activity
             android:name=".LauncherActivity"
