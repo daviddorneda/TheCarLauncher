@@ -1,10 +1,10 @@
 # TheCarLauncher
 
-```
-- 🔀 Implemented a selector to switch between **FM Radio** and **Online Radio** to test on more android devices that doesnt have MCUs or FM tuners, like tablets.
-- 🌐 Online Radio stations are sourced from [Radio Browser](https://www.radio-browser.info/).
-- 💯 **100% vibecoded with Gemini**
-```
+
+> - 🔀 Implemented a selector to switch between **FM Radio** and **Online Radio** to test on more android devices that doesnt have MCUs or FM tuners, like tablets.
+> - 🌐 Online Radio stations are sourced from [Radio Browser](https://www.radio-browser.info/).
+> - 💯 **100% vibecoded with Gemini**
+
 
 A home-screen launcher for Android head units, built for a double-DIN unit on the
 **UIS7862S platform (model code QF001)** in a compact hatchback. Its interface is styled after a
