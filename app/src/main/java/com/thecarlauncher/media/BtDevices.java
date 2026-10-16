@@ -283,7 +283,8 @@ public final class BtDevices {
         connectStarted = System.currentTimeMillis();
         changed();
         LoadingBanner.start("bt-connect", LoadingBanner.t((pair ? "Uparivanje sa " : "Povezivanje sa ") + d.label() + "…",
-                (pair ? "Pairing with " : "Connecting to ") + d.label() + "…"));
+                (pair ? "Pairing with " : "Connecting to ") + d.label() + "…",
+                (pair ? "Emparejando con " : "Conectando con ") + d.label() + "…"));
         if (cur != null) goc().send("CD");
         main.postDelayed(new Runnable() {
             public void run() {

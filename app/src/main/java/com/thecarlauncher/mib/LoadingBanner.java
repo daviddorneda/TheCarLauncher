@@ -68,6 +68,11 @@ public class LoadingBanner extends FrameLayout {
         return host == null ? sr : Mib.t(host.getContext(), sr, en);
     }
 
+    /** Same, with the Spanish text given right here (for texts built at run time). */
+    public static String t(String sr, String en, String es) {
+        return host == null ? sr : Mib.t(host.getContext(), sr, en, es);
+    }
+
     /** Height of the banner: two status bars. */
     public static int height(Context c) { return Mib.px(c, 104); }
 
