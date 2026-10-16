@@ -883,6 +883,30 @@ public class SettingsScreen extends Screen {
                         appChoice(s("Aplikacija za radio", "Radio app"), LauncherActivity.radioCandidates(act), Prefs.RADIO_PKG, true);
                     }
                 });
+        action(s("Dijagnostika radija (druga platforma)", "Radio diagnostics (other platforms)"), null, new Runnable() {
+            public void run() {
+                push(s("Dijagnostika radija", "Radio diagnostics"), new Page() {
+                    public void build() { buildRadioProbe(); }
+                });
+            }
+        });
+    }
+
+    /** Lists what this unit exposes for its FM tuner and saves the report as /sdcard/radio-probe.txt. */
+    private void buildRadioProbe() {
+        final java.util.List<String> lines = com.thecarlauncher.radio.RadioProbe.run(act);
+        String path = com.thecarlauncher.radio.RadioProbe.save(act, lines);
+        info(s("Izveštaj sačuvan", "Report saved"), path == null ? s("nije moguće sačuvati", "could not be saved") : path);
+        info(s("Greška tjunera", "Tuner error"), RadioController.get(act).error());
+        for (String l : lines) {
+            if (l.startsWith("##")) info(l.substring(3), null);
+            else if (l.startsWith("    ")) info("", l.trim());
+            else {
+                int i = l.indexOf(": ");
+                if (i > 0) info(l.substring(0, i), l.substring(i + 2));
+                else info(l, null);
+            }
+        }
     }
 
     private void buildVehicle() {
