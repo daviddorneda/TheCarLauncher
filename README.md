@@ -1,11 +1,15 @@
 # TheCarLauncher
 
+
+> - Deep research and testing to get the Radio working with an "NON-QF" MCU. (HeadUnit: UIS8581A)
+> - 💯 **100% vibecoded with Claude**
+
+=======
 > Why the fork?  
 
 Translated the entire app UI into Spanish (Spain) using Claude. 🇪🇸  
 Added a new tile to the **Language** menu in Settings to select Spanish.  
 
-> in "Radio-Online" branch I added a new feature to test the app radio on devices that aren't car headunits, such as Android tablets.
 ---
 
 A home-screen launcher for Android head units, built for a double-DIN unit on the
