@@ -79,8 +79,9 @@ public final class StreetName implements LocationTracker.Listener {
         new Thread(new Runnable() {
             @Override
             public void run() {
+                String lg = Prefs.str(app, Prefs.LANGUAGE, "sr");
                 String o = offline ? OfflineMaps.get(app).streetAt(l.getLatitude(), l.getLongitude(), bearing, moving,
-                        "en".equals(Prefs.str(app, Prefs.LANGUAGE, "sr")) ? "en" : "sr") : null;
+                        "en".equals(lg) ? "en" : "es".equals(lg) ? "es" : "sr") : null;
                 // Online only now and then (rate limits), and only when the maps have no name.
                 final String s = o != null ? o
                         : SystemClock.elapsedRealtime() - lastOnlineAt >= MIN_INTERVAL_MS ? online(l) : null;

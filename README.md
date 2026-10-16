@@ -5,6 +5,14 @@
 > - 🌐 Online Radio stations are sourced from [Radio Browser](https://www.radio-browser.info/).
 > - 💯 **100% vibecoded with Gemini**
 
+=======
+> Why the fork?  
+
+Translated the entire app UI into Spanish (Spain) using Claude. 🇪🇸  
+Added a new tile to the **Language** menu in Settings to select Spanish.  
+
+> in "Radio-Online" branch I added a new feature to test the app radio on devices that aren't car headunits, such as Android tablets.
+---
 
 A home-screen launcher for Android head units, built for a double-DIN unit on the
 **UIS7862S platform (model code QF001)** in a compact hatchback. Its interface is styled after a
@@ -77,7 +85,7 @@ Text is in Serbian (Latin) by default; English and Spanish (Spain) can be picked
 - **Drop-down loading banner** for anything that takes a moment (radio scan, reading USB, maps,
   route, phone connecting), soft fade-in on every page, and a back arrow wherever a page has no
   back key of its own.
-- **Own car pictures**: brand, model and the car / interior pictures can be set from storage.
+- **Own car pictures**: brand, model and the car / interior pictures: the built-in Corsa C set or pictures imported from the unit or USB.
 - **True fullscreen** (no Android bars) and a smooth, GPU-accelerated MENU pager.
 
 ---
@@ -297,9 +305,17 @@ enter; no diagnostic adapter is needed.
 | --- | --- | --- | --- |
 | ![Status](docs/screenshots/vehicle-status.png) | ![Refuel](docs/screenshots/vehicle-refuel.png) | ![Fuel](docs/screenshots/vehicle-fuel.png) | ![Service](docs/screenshots/vehicle-service.png) |
 
-*Setup → Vehicle* sets the brand and model and lets you pick your own car picture (Vehicle status)
-and interior picture (Ambient lighting) from the unit's storage; *Back to built-in* restores the
-originals.
+*Setup → Vehicle* sets the brand and model and the car picture (Vehicle status) and interior
+picture (Ambient lighting). Until a picture is chosen, both screens show a warning triangle with
+*No picture selected*. Each picture page offers **Corsa C (built-in)**, **No picture**, and
+**importing** a picture: the launcher lists the pictures itself, with previews, from the unit and
+from USB sticks (newest first), because many head units have no system picker that returns a
+result to a home app; *Another app* still opens the gallery or a file manager. The choice applies
+straight away.
+
+| No picture selected | Choosing a picture |
+| --- | --- |
+| ![No picture](docs/screenshots/vehicle-no-picture.png) | ![Choose a picture](docs/screenshots/settings-picture.png) |
 
 ### Ambient lighting
 
@@ -521,6 +537,7 @@ information shows *robolectric*.
 | Bluetooth devices: list, connect, pair a new phone | New in 4.3.0, needs testing |
 | Back to the previous screen | New in 4.3.1 |
 | Smooth arrow, driving direction up, offline street names | New in 4.4.0, needs testing |
+| Car / interior pictures: placeholder, built-in Corsa C, import inside the launcher | New in 4.4.2 |
 | UI, MENU, status bar, fullscreen | In daily use |
 | App-Connect connection states and auto-open | New in 3.9.0, needs testing with a phone |
 | Station logos (Radio Browser) | New in 4.0.0, needs testing on the unit's connection |

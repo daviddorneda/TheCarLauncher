@@ -8,18 +8,26 @@ on:
 permissions:
   contents: write
 
+# Evita que dos ejecuciones de la misma rama publiquen
+# simultáneamente la misma versión.
+concurrency:
+  group: apk-build-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
 
-      # The runner image ships the Android SDK; just make sure API 34 is present.
       - name: Install Android platform
         run: |
           SDKM=$(ls "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)
@@ -37,16 +45,60 @@ jobs:
           name: TheCarLauncher-apk
           path: TheCarLauncher.apk
 
-      # Every push to a branch also publishes a GitHub release, so the APK can be
-      # downloaded straight onto the head unit from the Releases page.
+      # Publicar solo en pushes, nunca en pull requests.
+      - name: Calculate release version
+        if: github.event_name == 'push'
+        id: version
+        shell: bash
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$BRANCH_NAME" == "main" ]]; then
+            PREFIX="build"
+            RELEASE_NAME="Car Launcher"
+          else
+            # Normalizar el nombre de la rama para crear una etiqueta.
+            SLUG=$(printf '%s' "$BRANCH_NAME" \
+              | tr '[:upper:]' '[:lower:]' \
+              | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')
+
+            # Evitar repetir "-testing" en el identificador.
+            SLUG=$(printf '%s' "$SLUG" | sed -E 's/-testing$//')
+            PREFIX="testing-${SLUG}"
+            RELEASE_NAME="Testing ${BRANCH_NAME}"
+          fi
+
+          # Consultar las etiquetas existentes en el repositorio.
+          git ls-remote --tags origin \
+            | sed -E 's#^[^[:space:]]+[[:space:]]+refs/tags/##; s/\^\{\}$//' \
+            | grep -E "^${PREFIX}-[0-9]+$" \
+            | sed -E "s/^${PREFIX}-([0-9]+)$/\1/" \
+            | sort -n > /tmp/release-numbers || true
+
+          LAST=$(tail -n 1 /tmp/release-numbers)
+          LAST=${LAST:-0}
+          NEXT=$((LAST + 1))
+
+          TAG="${PREFIX}-${NEXT}"
+
+          echo "tag_name=$TAG" >> "$GITHUB_OUTPUT"
+          echo "release_name=${RELEASE_NAME} #${NEXT}" >> "$GITHUB_OUTPUT"
+
+          echo "Branch: $BRANCH_NAME"
+          echo "Next release: $TAG"
+
       - name: Publish release
         if: github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: build-${{ github.run_number }}
-          name: Car Launcher build ${{ github.run_number }}
+          tag_name: ${{ steps.version.outputs.tag_name }}
+          name: ${{ steps.version.outputs.release_name }}
           target_commitish: ${{ github.sha }}
           files: TheCarLauncher.apk
           body: |
             Automatic build of `${{ github.ref_name }}` at ${{ github.sha }}.
             Download **TheCarLauncher.apk** below and open it on the head unit to install.
+          prerelease: ${{ github.ref_name != 'main' }}
+          make_latest: ${{ github.ref_name == 'main' }}

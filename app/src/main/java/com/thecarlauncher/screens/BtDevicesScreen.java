@@ -41,6 +41,7 @@ public class BtDevicesScreen extends Screen implements BtDevices.Listener {
     public BtDevicesScreen(LauncherActivity act) { super(act); }
 
     private String s(String sr, String en) { return Mib.t(act, sr, en); }
+    private String s(String sr, String en, String es) { return Mib.t(act, sr, en, es); }
 
     private BtDevices bt() { return BtDevices.get(act); }
 
@@ -168,7 +169,7 @@ public class BtDevicesScreen extends Screen implements BtDevices.Listener {
 
     private void render(boolean fade) {
         if (content == null) return;
-        title.setText(newDevice ? s("Novi uređaj", "New device") : title());
+        title.setText(newDevice ? s("Novi uređaj", "New device", "Nuevo dispositivo") : title());
         cornerIcon.setImageResource(newDevice ? R.drawable.ui_ic_search : R.drawable.ui_ic_plus);
         cornerText.setText(newDevice ? s("Traži", "Search") : s("Novi uređaj", "New device"));
         content.removeAllViews();
@@ -232,7 +233,8 @@ public class BtDevicesScreen extends Screen implements BtDevices.Listener {
         }
         note(name != null
                 ? s("Na telefonu uključi Bluetooth i izaberi „" + name + "“, ili izaberi telefon sa liste:",
-                        "On the phone, turn on Bluetooth and choose \"" + name + "\", or pick the phone from the list:")
+                        "On the phone, turn on Bluetooth and choose \"" + name + "\", or pick the phone from the list:",
+                        "En el teléfono, activa el Bluetooth y elige \"" + name + "\", o elige el teléfono de la lista:")
                 : s("Na telefonu uključi Bluetooth i uredi ga vidljivim, pa ga izaberi sa liste:",
                         "Turn on Bluetooth on the phone and make it visible, then pick it from the list:"));
         List<BtDevices.Device> found = bt().found();
