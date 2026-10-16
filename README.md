@@ -4,14 +4,13 @@
 > - 🔀 Implemented a selector to switch between **FM Radio** and **Online Radio** to test on more android devices that doesnt have MCUs or FM tuners, like tablets.
 > - 🌐 Online Radio stations are sourced from [Radio Browser](https://www.radio-browser.info/).
 > - 💯 **100% vibecoded with Gemini**
+---
 
-=======
 > Why the fork?  
 
 Translated the entire app UI into Spanish (Spain) using Claude. 🇪🇸  
 Added a new tile to the **Language** menu in Settings to select Spanish.  
 
-> in "Radio-Online" branch I added a new feature to test the app radio on devices that aren't car headunits, such as Android tablets.
 ---
 
 A home-screen launcher for Android head units, built for a double-DIN unit on the
