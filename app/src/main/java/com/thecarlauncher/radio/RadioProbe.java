@@ -7,10 +7,16 @@ import android.content.pm.ServiceInfo;
 import android.content.pm.ActivityInfo;
 import android.media.AudioManager;
 import android.os.Build;
+import android.os.IBinder;
+
+import dalvik.system.DexFile;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Enumeration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -152,6 +158,9 @@ public final class RadioProbe {
             }
         }
 
+        binders(out);
+        scanClasses(c, out);
+
         out.add("## Next step");
         out.add("Intent actions of the factory radio app cannot be read from here. If you have adb:");
         out.add("adb shell dumpsys package <radio package> | grep -A3 -i \"Action:\"");
@@ -174,6 +183,167 @@ public final class RadioProbe {
             }
         }
         return null;
+    }
+
+    // ---- binder services: interface descriptors -------------------------------------------------
+
+    private static final String[] BINDERS = {"mcu_service", "fmradio", "broadcastradio", "serial", "carstatus"};
+
+    private static void binders(List<String> out) {
+        out.add("## Binder services (interface descriptors)");
+        for (String name : BINDERS) {
+            try {
+                Class<?> sm = Class.forName("android.os.ServiceManager");
+                IBinder b = (IBinder) sm.getMethod("getService", String.class).invoke(null, name);
+                if (b == null) {
+                    out.add(name + ": (null)");
+                    continue;
+                }
+                String d = "?";
+                try {
+                    d = b.getInterfaceDescriptor();
+                } catch (Throwable t) {
+                    d = "error " + t.getClass().getSimpleName();
+                }
+                out.add(name + ": " + d + "  alive=" + b.pingBinder());
+                if (d.indexOf('.') > 0) {
+                    dumpClass(out, d, null);
+                    dumpClass(out, d + "$Stub", null);
+                }
+            } catch (Throwable t) {
+                out.add(name + ": failed " + t.getClass().getSimpleName());
+            }
+        }
+    }
+
+    // ---- class scan: framework jars and the factory radio app -----------------------------------
+
+    private static final Pattern STRICT = Pattern.compile("(?i).*(hcn|mcu|fmradio|\\.fm\\.|\\.ifm|tuner).*");
+    private static final String[] JAR_DIRS = {"/system/framework", "/system_ext/framework", "/vendor/framework",
+            "/product/framework", "/vendor/app", "/system/priv-app/FmRadio"};
+    private static final String RADIO_PKG = "com.hcn.autoradio";
+
+    private static void scanClasses(Context c, List<String> out) {
+        out.add("## Classes (framework)");
+        int dumped = 0;
+        for (String dir : JAR_DIRS) {
+            File[] files = new File(dir).listFiles();
+            if (files == null) continue;
+            for (File f : files) {
+                if (!f.getName().endsWith(".jar") && !f.getName().endsWith(".apk")) continue;
+                List<String> hits = matches(f.getAbsolutePath(), 60);
+                if (hits.isEmpty()) continue;
+                out.add(f.getAbsolutePath());
+                for (String h : hits) {
+                    out.add("    " + h);
+                    if (dumped < 15 && (h.contains("$Stub") || h.matches(".*[.]I[A-Z][A-Za-z]*$"))) {
+                        dumped++;
+                        dumpClass(out, h, null);
+                    }
+                }
+            }
+        }
+
+        out.add("## Classes (" + RADIO_PKG + ")");
+        try {
+            String apk = c.getPackageManager().getApplicationInfo(RADIO_PKG, 0).sourceDir;
+            out.add("apk: " + apk);
+            ClassLoader cl = c.createPackageContext(RADIO_PKG,
+                    Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY).getClassLoader();
+            List<String> names = allClasses(apk, 250);
+            for (String n : names) out.add("    " + n);
+            int d2 = 0;
+            for (String n : names) {
+                if (d2 >= 25) break;
+                String simple = n.substring(n.lastIndexOf('.') + 1);
+                if (simple.contains("$Stub") || simple.matches("I[A-Z].*") || simple.matches(".*(Manager|Native|Mcu|Tuner|Controller).*")) {
+                    d2++;
+                    dumpClass(out, n, cl);
+                }
+            }
+            copyApk(apk, out);
+        } catch (Throwable t) {
+            out.add("failed: " + t.getClass().getSimpleName() + " " + t.getMessage());
+        }
+    }
+
+    private static List<String> matches(String path, int max) {
+        List<String> r = new ArrayList<>();
+        try {
+            DexFile df = new DexFile(path);
+            Enumeration<String> e = df.entries();
+            while (e.hasMoreElements() && r.size() < max) {
+                String n = e.nextElement();
+                if (STRICT.matcher(n).matches()) r.add(n);
+            }
+            df.close();
+        } catch (Throwable ignored) {
+        }
+        return r;
+    }
+
+    private static List<String> allClasses(String path, int max) {
+        List<String> r = new ArrayList<>();
+        try {
+            DexFile df = new DexFile(path);
+            Enumeration<String> e = df.entries();
+            while (e.hasMoreElements() && r.size() < max) {
+                String n = e.nextElement();
+                if (n.startsWith("com.hcn.") || n.startsWith("android.") || n.startsWith("com.android.fm")) r.add(n);
+            }
+            df.close();
+        } catch (Throwable ignored) {
+        }
+        java.util.Collections.sort(r);
+        return r;
+    }
+
+    /** Prints methods, constants (AIDL TRANSACTION_* codes) and the DESCRIPTOR of a class. */
+    private static void dumpClass(List<String> out, String name, ClassLoader cl) {
+        try {
+            Class<?> k = cl == null ? Class.forName(name) : Class.forName(name, false, cl);
+            out.add("  [class] " + name + (k.isInterface() ? " (interface)" : ""));
+            for (Field f : k.getDeclaredFields()) {
+                if (!Modifier.isStatic(f.getModifiers())) continue;
+                if (f.getType() != int.class && f.getType() != String.class) continue;
+                try {
+                    f.setAccessible(true);
+                    out.add("      const " + f.getName() + " = " + f.get(null));
+                } catch (Throwable ignored) {
+                }
+            }
+            int n = 0;
+            for (Method m : k.getDeclaredMethods()) {
+                if (n++ >= 80) {
+                    out.add("      …");
+                    break;
+                }
+                StringBuilder sb = new StringBuilder("      " + m.getReturnType().getSimpleName() + " " + m.getName() + "(");
+                Class<?>[] ps = m.getParameterTypes();
+                for (int i = 0; i < ps.length; i++) sb.append(i > 0 ? ", " : "").append(ps[i].getSimpleName());
+                out.add(sb.append(")").toString());
+            }
+        } catch (Throwable t) {
+            out.add("  [class] " + name + ": not loadable (" + t.getClass().getSimpleName() + ")");
+        }
+    }
+
+    private static void copyApk(String apk, List<String> out) {
+        try {
+            File dir = new File("/sdcard/radio-probe");
+            if (!dir.exists() && !dir.mkdirs()) return;
+            File dst = new File(dir, RADIO_PKG + ".apk");
+            java.io.FileInputStream in = new java.io.FileInputStream(apk);
+            FileOutputStream o = new FileOutputStream(dst);
+            byte[] buf = new byte[65536];
+            int r;
+            while ((r = in.read(buf)) > 0) o.write(buf, 0, r);
+            o.close();
+            in.close();
+            out.add("apk copied to " + dst.getAbsolutePath());
+        } catch (Throwable t) {
+            out.add("apk copy failed: " + t.getClass().getSimpleName());
+        }
     }
 
     private static String prop(String key) {
