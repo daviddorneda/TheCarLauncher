@@ -9,6 +9,7 @@ import android.media.AudioManager;
 import android.os.Build;
 import android.os.IBinder;
 
+import dalvik.system.DexClassLoader;
 import dalvik.system.DexFile;
 
 import java.io.File;
@@ -248,22 +249,126 @@ public final class RadioProbe {
         try {
             String apk = c.getPackageManager().getApplicationInfo(RADIO_PKG, 0).sourceDir;
             out.add("apk: " + apk);
-            ClassLoader cl = c.createPackageContext(RADIO_PKG,
-                    Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY).getClassLoader();
-            List<String> names = allClasses(apk, 250);
-            for (String n : names) out.add("    " + n);
-            int d2 = 0;
-            for (String n : names) {
-                if (d2 >= 25) break;
-                String simple = n.substring(n.lastIndexOf('.') + 1);
-                if (simple.contains("$Stub") || simple.matches("I[A-Z].*") || simple.matches(".*(Manager|Native|Mcu|Tuner|Controller).*")) {
-                    d2++;
-                    dumpClass(out, n, cl);
-                }
-            }
-            copyApk(apk, out);
+            for (String n : allClasses(apk, 400)) out.add("    " + n);
+            copyApk(c, apk, out);
+            vendorDump(c, apk, out);
         } catch (Throwable t) {
             out.add("failed: " + t.getClass().getSimpleName() + " " + t.getMessage());
+        }
+    }
+
+    // ---- full interface dump, loaded from the factory radio APK itself --------------------------
+
+    /**
+     * Class loader that prefers the classes of the factory radio APK over the (hidden-API protected)
+     * copies in the boot classpath, so reflection sees every method and every TRANSACTION_* code.
+     */
+    private static final class ChildFirst extends DexClassLoader {
+        ChildFirst(String dex, String opt, ClassLoader parent) {
+            super(dex, opt, null, parent);
+        }
+
+        @Override
+        protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+            Class<?> k = findLoadedClass(name);
+            if (k == null) {
+                try {
+                    k = findClass(name);
+                } catch (ClassNotFoundException e) {
+                    return super.loadClass(name, resolve);
+                }
+            }
+            if (resolve) resolveClass(k);
+            return k;
+        }
+    }
+
+    private static final String[] VENDOR = {
+            "android.radio.IRadioPlayer", "android.radio.IRadioPlayer$Stub",
+            "android.radio.IRadioCallback", "android.radio.IRadioCallback$Stub",
+            "android.radio.RadioPlayer", "android.radio.RadioPlayer$BAND", "android.radio.RadioPlayer$OnEventListener",
+            "android.radio.RadioInfo", "android.radio.Utility$RadioParameters",
+            "android.carsource.IMcuManager", "android.carsource.IMcuManager$Stub",
+            "android.carsource.IMcuListener", "android.carsource.IMcuListener$Stub",
+            "android.carsource.McuConstant", "android.carsource.McuManager",
+            "android.carsource.McuManager$OnEventListener",
+            "android.carstatus.ICarStatus", "android.carstatus.ICarStatus$Stub",
+    };
+
+    private static void vendorDump(Context c, String apk, List<String> out) {
+        out.add("## Vendor interfaces (loaded from " + RADIO_PKG + ")");
+        ClassLoader cl;
+        try {
+            cl = new ChildFirst(apk, c.getCodeCacheDir().getAbsolutePath(), c.getClassLoader());
+        } catch (Throwable t) {
+            out.add("loader failed: " + t.getClass().getSimpleName());
+            return;
+        }
+        for (String name : VENDOR) {
+            try {
+                Class<?> k = Class.forName(name, false, cl);
+                Class<?> stub = null;
+                if (k.isInterface()) {
+                    try {
+                        stub = Class.forName(name + "$Stub", false, cl);
+                    } catch (Throwable ignored) {
+                    }
+                }
+                out.add("  [class] " + name + (k.isInterface() ? " (interface)" : "")
+                        + (k.getSuperclass() != null && k.getSuperclass() != Object.class
+                        ? " extends " + k.getSuperclass().getName() : ""));
+                int nf = 0;
+                for (Field f : k.getDeclaredFields()) {
+                    if (nf >= 150) {
+                        out.add("      …");
+                        break;
+                    }
+                    try {
+                        f.setAccessible(true);
+                        if (Modifier.isStatic(f.getModifiers())) {
+                            Class<?> t = f.getType();
+                            if (t.isPrimitive() || t == String.class) {
+                                nf++;
+                                out.add("      const " + f.getName() + " = " + f.get(null));
+                            }
+                        } else {
+                            nf++;
+                            out.add("      field " + f.getType().getSimpleName() + " " + f.getName());
+                        }
+                    } catch (Throwable ignored) {
+                    }
+                }
+                List<String> ms = new ArrayList<>();
+                for (Method m : k.getDeclaredMethods()) {
+                    if (m.isSynthetic()) continue;
+                    StringBuilder sb = new StringBuilder();
+                    int code = -1;
+                    if (stub != null) {
+                        try {
+                            Field f = stub.getDeclaredField("TRANSACTION_" + m.getName());
+                            f.setAccessible(true);
+                            code = f.getInt(null);
+                        } catch (Throwable ignored) {
+                        }
+                    }
+                    sb.append(code >= 0 ? String.format(Locale.US, "%04d", code) : "----").append("  ");
+                    sb.append(m.getReturnType().getSimpleName()).append(' ').append(m.getName()).append('(');
+                    Class<?>[] ps = m.getParameterTypes();
+                    for (int i = 0; i < ps.length; i++) sb.append(i > 0 ? ", " : "").append(ps[i].getName());
+                    ms.add(sb.append(')').toString());
+                }
+                java.util.Collections.sort(ms);
+                int nm = 0;
+                for (String m : ms) {
+                    if (nm++ >= 160) {
+                        out.add("      …");
+                        break;
+                    }
+                    out.add("      " + m);
+                }
+            } catch (Throwable t) {
+                out.add("  [class] " + name + ": not loadable (" + t.getClass().getSimpleName() + ")");
+            }
         }
     }
 
@@ -289,7 +394,8 @@ public final class RadioProbe {
             Enumeration<String> e = df.entries();
             while (e.hasMoreElements() && r.size() < max) {
                 String n = e.nextElement();
-                if (n.startsWith("com.hcn.") || n.startsWith("android.") || n.startsWith("com.android.fm")) r.add(n);
+                if (n.startsWith("com.hcn.autoradio") || n.startsWith("android.radio") || n.startsWith("android.carsource")
+                        || n.startsWith("android.carstatus") || n.startsWith("android.sourceservice")) r.add(n);
             }
             df.close();
         } catch (Throwable ignored) {
@@ -328,22 +434,25 @@ public final class RadioProbe {
         }
     }
 
-    private static void copyApk(String apk, List<String> out) {
-        try {
-            File dir = new File("/sdcard/radio-probe");
-            if (!dir.exists() && !dir.mkdirs()) return;
-            File dst = new File(dir, RADIO_PKG + ".apk");
-            java.io.FileInputStream in = new java.io.FileInputStream(apk);
-            FileOutputStream o = new FileOutputStream(dst);
-            byte[] buf = new byte[65536];
-            int r;
-            while ((r = in.read(buf)) > 0) o.write(buf, 0, r);
-            o.close();
-            in.close();
-            out.add("apk copied to " + dst.getAbsolutePath());
-        } catch (Throwable t) {
-            out.add("apk copy failed: " + t.getClass().getSimpleName());
+    private static void copyApk(Context c, String apk, List<String> out) {
+        File[] dirs = {new File("/sdcard/radio-probe"), new File(c.getExternalFilesDir(null), "radio-probe")};
+        for (File dir : dirs) {
+            try {
+                if (!dir.exists() && !dir.mkdirs()) continue;
+                File dst = new File(dir, RADIO_PKG + ".apk");
+                java.io.FileInputStream in = new java.io.FileInputStream(apk);
+                FileOutputStream o = new FileOutputStream(dst);
+                byte[] buf = new byte[65536];
+                int r;
+                while ((r = in.read(buf)) > 0) o.write(buf, 0, r);
+                o.close();
+                in.close();
+                out.add("apk copied to " + dst.getAbsolutePath());
+                return;
+            } catch (Throwable ignored) {
+            }
         }
+        out.add("apk copy failed (copy " + apk + " by hand if needed)");
     }
 
     private static String prop(String key) {
