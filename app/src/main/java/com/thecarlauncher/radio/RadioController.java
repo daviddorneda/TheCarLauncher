@@ -19,7 +19,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * FM radio inside the launcher: tuner state, presets, station list and audio routing.
- * Drives the K706/QuickFish tuner through {@link K706Tuner}.
+ * Drives the K706/QuickFish tuner through {@link K706Tuner}, or on units of the "hcn" platform
+ * (UIS8581A / ZA firmware) the factory radio service through {@link HcnTuner}.
  */
 public final class RadioController implements K706Tuner.Listener {
     public interface Listener { void onRadioChanged(); }
@@ -42,6 +43,9 @@ public final class RadioController implements K706Tuner.Listener {
     private final Context app;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final K706Tuner tuner;
+    private final HcnTuner hcn;
+    private static final int BACKEND_NONE = 0, BACKEND_QF = 1, BACKEND_HCN = 2;
+    private int backend = BACKEND_NONE;
     private final AudioManager audio;
     private final CopyOnWriteArrayList<Listener> listeners = new CopyOnWriteArrayList<>();
     private final Station[] presets = new Station[PRESETS];
@@ -83,6 +87,7 @@ public final class RadioController implements K706Tuner.Listener {
     private RadioController(Context c) {
         app = c;
         tuner = new K706Tuner(c);
+        hcn = new HcnTuner(c);
         audio = (AudioManager) c.getSystemService(Context.AUDIO_SERVICE);
         freq = Prefs.integer(c, P_FREQ, FM_MIN);
         loadList(Prefs.str(c, P_PRESETS, ""), null);
@@ -106,10 +111,68 @@ public final class RadioController implements K706Tuner.Listener {
     /** True when this head unit's FM tuner can be driven from the launcher. */
     public boolean available() {
         if (!Prefs.bool(app, Prefs.RADIO_INTERNAL, true)) return false;
-        return tuner.connect(this);
+        if (backend == BACKEND_HCN) return true;
+        if (tuner.connect(this)) {
+            backend = BACKEND_QF;
+            return true;
+        }
+        if (backend != BACKEND_QF && hcn.connect(hcnListener)) {
+            backend = BACKEND_HCN;
+            return true;
+        }
+        return false;
     }
 
-    public String error() { return tuner.error(); }
+    public String error() {
+        if (backend == BACKEND_HCN) return hcn.error();
+        String q = tuner.error(), h = hcn.error();
+        return h == null ? q : (q == null ? h : q + " | " + h);
+    }
+
+    /** Which tuner driver is in use, for diagnostics. */
+    public String backend() {
+        return backend == BACKEND_HCN ? "HCN (factory radio service)"
+                : backend == BACKEND_QF ? "QuickFish MCU" : "none";
+    }
+
+    /** State from the HCN factory radio service. Frequencies arrive in kHz, the launcher uses 10 kHz units. */
+    private final HcnTuner.Listener hcnListener = new HcnTuner.Listener() {
+        @Override
+        public void onState(int freqKhz, boolean st, boolean seek, boolean local) {
+            stereo = st;
+            seeking = seek;
+            int f = ((freqKhz / 10 + 5) / 10) * 10;
+            if (f >= FM_MIN && f <= FM_MAX) setFreq(f);
+            changed();
+        }
+
+        @Override
+        public void onPs(String name) {
+            if (name.length() > 0 && !name.equals(ps)) {
+                ps = name;
+                changed();
+            }
+        }
+
+        @Override
+        public void onRt(String text) {
+            if (text.length() > 0 && !text.equals(rt)) {
+                rt = text;
+                changed();
+            }
+        }
+    };
+
+    private void doTune(int f) {
+        if (backend == BACKEND_HCN) hcn.tune(f * 10);
+        else tuner.tune(f);
+    }
+
+    private void doSeek(boolean up) {
+        if (backend == BACKEND_HCN) hcn.seek(up);
+        else if (up) tuner.cmd(K706Tuner.SUB_SEEK_UP, 1, 0);
+        else tuner.cmd(K706Tuner.SUB_SEEK_DOWN, 2, 0);
+    }
 
     // ---- MCU audio switch (shared with Bluetooth music) ----------------------------------------
 
@@ -154,6 +217,14 @@ public final class RadioController implements K706Tuner.Listener {
         if (!available()) return false;
         if (active) return true;
         MediaHub.get(app).onRadioStarting();
+        if (backend == BACKEND_HCN) {
+            // The factory service owns audio focus and the FM audio render; we only drive it.
+            hcn.start(freq * 10);
+            if (Prefs.bool(app, Prefs.RADIO_LOC, false)) hcn.setLocal(true);
+            active = true;
+            changed();
+            return true;
+        }
         tuner.mute(true);
         tuner.cmd(K706Tuner.SUB_AREA, 1, 0);
         requestFocus();
@@ -182,6 +253,11 @@ public final class RadioController implements K706Tuner.Listener {
         if (!active) return;
         active = false;
         focusPaused = false;
+        if (backend == BACKEND_HCN) {
+            hcn.stop();
+            changed();
+            return;
+        }
         tuner.mute(true);
         try {
             audio.setParameters("fm_radio_on=0;fm_mute=1");
@@ -224,17 +300,17 @@ public final class RadioController implements K706Tuner.Listener {
         f = Math.max(FM_MIN, Math.min(FM_MAX, f));
         if (!active) start();
         setFreq(f);
-        tuner.tune(f);
+        doTune(f);
     }
 
     public void seekUp() {
         if (!active) start();
-        tuner.cmd(K706Tuner.SUB_SEEK_UP, 1, 0);
+        doSeek(true);
     }
 
     public void seekDown() {
         if (!active) start();
-        tuner.cmd(K706Tuner.SUB_SEEK_DOWN, 2, 0);
+        doSeek(false);
     }
 
     public void stepUp() {
@@ -246,11 +322,12 @@ public final class RadioController implements K706Tuner.Listener {
     }
 
     public void setLocal(boolean local) {
-        tuner.cmd(K706Tuner.SUB_LOC, local ? 1 : 0, 0);
+        if (backend == BACKEND_HCN) hcn.setLocal(local);
+        else tuner.cmd(K706Tuner.SUB_LOC, local ? 1 : 0, 0);
     }
 
     public void setRds(boolean on) {
-        tuner.send(K706Tuner.CMD_RDS, new byte[]{(byte) (on ? 1 : 0)});
+        if (backend != BACKEND_HCN) tuner.send(K706Tuner.CMD_RDS, new byte[]{(byte) (on ? 1 : 0)});
     }
 
     private void setFreq(int f) {
@@ -319,7 +396,7 @@ public final class RadioController implements K706Tuner.Listener {
         main.postDelayed(new Runnable() {
             @Override
             public void run() {
-                tuner.tune(FM_MIN);
+                doTune(FM_MIN);
                 setFreq(FM_MIN);
                 main.postDelayed(scanStep, 600);
             }
@@ -342,7 +419,7 @@ public final class RadioController implements K706Tuner.Listener {
             if (!scanning) return;
             scanLast = freq;
             scanSettleAt = 0;
-            tuner.cmd(K706Tuner.SUB_SEEK_UP, 1, 0);
+            doSeek(true);
             main.postDelayed(scanWatch, 700);
         }
     };

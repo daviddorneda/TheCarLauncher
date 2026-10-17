@@ -897,7 +897,10 @@ public class SettingsScreen extends Screen {
         final java.util.List<String> lines = com.thecarlauncher.radio.RadioProbe.run(act);
         String path = com.thecarlauncher.radio.RadioProbe.save(act, lines);
         info(s("Izveštaj sačuvan", "Report saved"), path == null ? s("nije moguće sačuvati", "could not be saved") : path);
-        info(s("Greška tjunera", "Tuner error"), RadioController.get(act).error());
+        RadioController rc = RadioController.get(act);
+        rc.available(); // picks the driver (QuickFish or HCN) so it can be reported
+        info(s("Tjuner drajver", "Tuner backend"), rc.backend());
+        info(s("Greška tjunera", "Tuner error"), rc.error());
         for (String l : lines) {
             if (l.startsWith("##")) info(l.substring(3), null);
             else if (l.startsWith("    ")) info("", l.trim());
